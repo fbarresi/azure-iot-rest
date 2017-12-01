@@ -6,7 +6,11 @@ import sys
 from base64 import b64encode, b64decode
 from hashlib import sha256
 from time import time
-from urllib.parse import quote, urlencode
+import sys
+if sys.version_info > (2, 7):
+    from urllib.parse import quote, urlencode
+else:
+    from urllib import quote_plus, urlencode
 from hmac import HMAC
 import argparse
 
@@ -34,10 +38,15 @@ applyConfigurationURI = 'https://%s/devices/%s/applyConfigurationContent?api-ver
 
 def get_iot_hub_sas_token(uri, key, policy_name, expiry=3600):
     ttl = time() + expiry
-    sign_key = "%s\n%d" % ((quote(uri)), int(ttl))
-    signature = b64encode(HMAC(b64decode(key), sign_key.encode('utf-8'), sha256).digest())
+    
+    if sys.version_info > (2,7):
+        sign_key = "%s\n%d" % ((quote(uri)), int(ttl))
+        signature = b64encode(HMAC(b64decode(key), sign_key.encode('utf-8'), sha256).digest())
+    else:
+        sign_key = "%s\n%d" % ((quote_plus(uri)), int(ttl))
+        signature = b64encode(HMAC(b64decode(key), sign_key, sha256).digest())
 
-    rawtoken = {
+	rawtoken = {
         'sr' :  uri,
         'sig': signature,
         'se' : str(int(ttl))
